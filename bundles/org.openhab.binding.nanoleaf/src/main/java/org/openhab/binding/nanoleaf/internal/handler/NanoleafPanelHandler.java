@@ -240,18 +240,8 @@ public class NanoleafPanelHandler extends BaseThingHandler implements NanoleafPa
             BridgeHandler handler = bridge.getHandler();
             if (handler != null) {
                 NanoleafControllerConfig config = ((NanoleafControllerHandler) handler).getControllerConfig();
-                // Light Panels and Canvas use different stream commands
-                if (config.deviceType.equals(CONFIG_DEVICE_TYPE_LIGHTPANELS)
-                        || config.deviceType.equals(CONFIG_DEVICE_TYPE_CANVAS)) {
-                    logger.trace("Anim Data rgb {} {} {} {}", panelID, red, green, blue);
-                    write.setAnimData(String.format("1 %s 1 %d %d %d 0 10", panelID, red, green, blue));
-                } else {
-                    // this is only used in special streaming situations with canvas which is not yet supported
-                    int quotient = Integer.divideUnsigned(panelID, 256);
-                    int remainder = Integer.remainderUnsigned(panelID, 256);
-                    write.setAnimData(
-                            String.format("0 1 %d %d %d %d %d 0 0 10", quotient, remainder, red, green, blue));
-                }
+                logger.trace("Anim Data rgb {} {} {} {}", panelID, red, green, blue);
+                write.setAnimData(String.format("1 %s 1 %d %d %d 0 10", panelID, red, green, blue));
                 write.setLoop(false);
                 effects.setWrite(write);
                 Request setNewRenderedEffectRequest = OpenAPIUtils.requestBuilder(httpClient, config, API_EFFECT,

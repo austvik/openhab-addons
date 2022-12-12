@@ -22,6 +22,7 @@ import javax.jmdns.ServiceInfo;
 
 import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.eclipse.jdt.annotation.Nullable;
+import org.openhab.binding.nanoleaf.internal.NanoleafControllerModel;
 import org.openhab.binding.nanoleaf.internal.NanoleafHandlerFactory;
 import org.openhab.binding.nanoleaf.internal.OpenAPIUtils;
 import org.openhab.core.config.discovery.DiscoveryResult;
@@ -64,7 +65,7 @@ public class NanoleafMDNSDiscoveryParticipant implements MDNSDiscoveryParticipan
         if (uid == null) {
             return null;
         }
-        final Map<String, Object> properties = new HashMap<>(2);
+        final Map<String, Object> properties = new HashMap<>(4);
         String host = service.getHostAddresses()[0];
         properties.put(CONFIG_ADDRESS, host);
         int port = service.getPort();
@@ -81,9 +82,11 @@ public class NanoleafMDNSDiscoveryParticipant implements MDNSDiscoveryParticipan
                 firmwareVersion, modelId, qualifiedName);
         logger.debug("Adding Nanoleaf controller {} with FW version {} found at {}:{} to inbox", qualifiedName,
                 firmwareVersion, host, port);
-        if (!OpenAPIUtils.checkRequiredFirmware(service.getPropertyString("md"), firmwareVersion)) {
+
+        NanoleafControllerModel controllerModel = NanoleafControllerModel.getForModel(modelId);
+        if (!OpenAPIUtils.checkRequiredFirmware(modelId, firmwareVersion)) {
             logger.debug("Nanoleaf controller firmware is too old. Must be {} or higher",
-                    MODEL_ID_LIGHTPANELS.equals(modelId) ? API_MIN_FW_VER_LIGHTPANELS : API_MIN_FW_VER_CANVAS);
+                    controllerModel.getMinApiVersion());
         }
 
         final DiscoveryResult result = DiscoveryResultBuilder.create(uid).withThingType(getThingType(service))

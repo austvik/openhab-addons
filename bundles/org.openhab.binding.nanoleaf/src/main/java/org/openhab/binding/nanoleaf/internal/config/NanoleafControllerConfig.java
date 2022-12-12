@@ -35,7 +35,4 @@ public class NanoleafControllerConfig {
     /** Light panels status refresh interval */
     public static final String REFRESH_INTERVAL = "refreshInterval";
     public int refreshInterval = 60;
-    /** Nanoleaf device type: Light panels or Canvas */
-    public static final String DEVICE_TYPE = "deviceType";
-    public String deviceType = "lightPanels";
 }

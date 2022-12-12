@@ -39,8 +39,9 @@ import org.eclipse.jetty.client.util.StringContentProvider;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
 import org.openhab.binding.nanoleaf.internal.NanoleafBadRequestException;
-import org.openhab.binding.nanoleaf.internal.NanoleafBindingConstants;
+import org.openhab.binding.nanoleaf.internal.NanoleafBadResponseException;
 import org.openhab.binding.nanoleaf.internal.NanoleafControllerListener;
+import org.openhab.binding.nanoleaf.internal.NanoleafControllerModel;
 import org.openhab.binding.nanoleaf.internal.NanoleafException;
 import org.openhab.binding.nanoleaf.internal.NanoleafNotFoundException;
 import org.openhab.binding.nanoleaf.internal.NanoleafUnauthorizedException;
@@ -118,7 +119,7 @@ public class NanoleafControllerHandler extends BaseBridgeHandler implements Nano
 
     private @Nullable HttpClient httpClientSSETouchEvent;
     private @Nullable Request sseTouchjobRequest;
-    private final List<NanoleafControllerListener> controllerListeners = new CopyOnWriteArrayList<NanoleafControllerListener>();
+    private final List<NanoleafControllerListener> controllerListeners = new CopyOnWriteArrayList<>();
     private PanelLayout previousPanelLayout = new PanelLayout();
     private final NanoleafPanelColors panelColors = new NanoleafPanelColors();
 
@@ -131,7 +132,6 @@ public class NanoleafControllerHandler extends BaseBridgeHandler implements Nano
     private int port;
     private int refreshIntervall;
     private @Nullable String authToken;
-    private @Nullable String deviceType;
     private @NonNullByDefault({}) ControllerInfo controllerInfo;
 
     private boolean touchJobRunning = false;
@@ -171,26 +171,21 @@ public class NanoleafControllerHandler extends BaseBridgeHandler implements Nano
         setAddress(config.address);
         setPort(config.port);
         setRefreshIntervall(config.refreshInterval);
-        String authToken = (config.authToken != null) ? config.authToken : "";
-        setAuthToken(authToken);
+        setAuthToken((config.authToken != null) ? config.authToken : "");
         Map<String, String> properties = getThing().getProperties();
         String propertyModelId = properties.get(Thing.PROPERTY_MODEL_ID);
-        if (hasTouchSupport(propertyModelId)) {
-            config.deviceType = DEVICE_TYPE_TOUCHSUPPORT;
+        NanoleafControllerModel controllerModel = NanoleafControllerModel.getForModel(propertyModelId);
+        if (controllerModel.hasControllerTouchSupport()) {
             initializeTouchHttpClient();
-        } else {
-            config.deviceType = DEVICE_TYPE_LIGHTPANELS;
         }
 
-        setDeviceType(config.deviceType);
         String propertyFirmwareVersion = properties.get(Thing.PROPERTY_FIRMWARE_VERSION);
-
         try {
             if (!config.address.isEmpty() && !String.valueOf(config.port).isEmpty()) {
-                if (propertyFirmwareVersion != null && !propertyFirmwareVersion.isEmpty() && !OpenAPIUtils
-                        .checkRequiredFirmware(properties.get(Thing.PROPERTY_MODEL_ID), propertyFirmwareVersion)) {
+                if (propertyFirmwareVersion != null && !propertyFirmwareVersion.isEmpty()
+                        && !OpenAPIUtils.checkRequiredFirmware(propertyModelId, propertyFirmwareVersion)) {
                     logger.warn("Nanoleaf controller firmware is too old: {}. Must be equal or higher than {}",
-                            propertyFirmwareVersion, API_MIN_FW_VER_LIGHTPANELS);
+                            propertyFirmwareVersion, controllerModel.getMinApiVersion());
                     updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.CONFIGURATION_ERROR,
                             "@text/error.nanoleaf.controller.incompatibleFirmware");
                     stopAllJobs();
@@ -311,7 +306,6 @@ public class NanoleafControllerHandler extends BaseBridgeHandler implements Nano
         config.port = getPort();
         config.refreshInterval = getRefreshInterval();
         config.authToken = getAuthToken();
-        config.deviceType = Objects.requireNonNullElse(getDeviceType(), "");
         return config;
     }
 
@@ -366,11 +360,13 @@ public class NanoleafControllerHandler extends BaseBridgeHandler implements Nano
     }
 
     private synchronized void startTouchJob() {
-        NanoleafControllerConfig config = getConfigAs(NanoleafControllerConfig.class);
-        if (!config.deviceType.equals(DEVICE_TYPE_TOUCHSUPPORT)) {
+        Map<String, String> properties = getThing().getProperties();
+        String propertyModelId = properties.get(Thing.PROPERTY_MODEL_ID);
+        NanoleafControllerModel controllerModel = NanoleafControllerModel.getForModel(propertyModelId);
+        if (!controllerModel.hasControllerTouchSupport()) {
             logger.debug(
-                    "NOT starting TouchJob for Controller {} because it has wrong device type '{}' vs required '{}'",
-                    this.getThing().getUID(), config.deviceType, DEVICE_TYPE_TOUCHSUPPORT);
+                    "NOT starting TouchJob for Controller {} because it has model id '{}' which doesn't support touch gestures",
+                    this.getThing().getUID(), propertyModelId);
         } else {
             logger.debug("Starting TouchJob for Controller {}", getThing().getUID());
             final String localAuthToken = getAuthToken();
@@ -409,10 +405,6 @@ public class NanoleafControllerHandler extends BaseBridgeHandler implements Nano
             touchJobRunning = false;
             logger.debug("tj: touch job stopped for {} with client {}", thing.getUID(), httpClientSSETouchEvent);
         }
-    }
-
-    private boolean hasTouchSupport(@Nullable String deviceType) {
-        return NanoleafBindingConstants.MODELS_WITH_TOUCHSUPPORT.contains(deviceType);
     }
 
     private void runUpdate() {
@@ -478,7 +470,6 @@ public class NanoleafControllerHandler extends BaseBridgeHandler implements Nano
 
                 logger.debug("Pairing succeeded.");
                 Configuration config = editConfiguration();
-
                 config.put(NanoleafControllerConfig.AUTH_TOKEN, authTokenObject.getAuthToken());
                 updateConfiguration(config);
                 updateStatus(ThingStatus.ONLINE);
@@ -675,7 +666,6 @@ public class NanoleafControllerHandler extends BaseBridgeHandler implements Nano
             setSolidColor(stateColor);
         }
         updateProperties();
-        updateConfiguration();
         updateLayout(controllerInfo.getPanelLayout());
         updateVisualState(controllerInfo.getPanelLayout(), powerState);
 
@@ -703,26 +693,6 @@ public class NanoleafControllerHandler extends BaseBridgeHandler implements Nano
             }
         } else {
             logger.debug("Missing layout when setting solid color for {}", getThing().getUID());
-        }
-    }
-
-    private void updateConfiguration() {
-        // only update the Thing config if value isn't set yet
-        if (getConfig().get(NanoleafControllerConfig.DEVICE_TYPE) == null) {
-            Configuration config = editConfiguration();
-            if (hasTouchSupport(controllerInfo.getModel())) {
-                config.put(NanoleafControllerConfig.DEVICE_TYPE, DEVICE_TYPE_TOUCHSUPPORT);
-                logger.debug("Set to device type {}", DEVICE_TYPE_TOUCHSUPPORT);
-            } else {
-                config.put(NanoleafControllerConfig.DEVICE_TYPE, DEVICE_TYPE_LIGHTPANELS);
-                logger.debug("Set to device type {}", DEVICE_TYPE_LIGHTPANELS);
-            }
-            updateConfiguration(config);
-            if (logger.isTraceEnabled()) {
-                getConfig().getProperties().forEach((key, value) -> {
-                    logger.trace("Configuration property: key {} value {}", key, value);
-                });
-            }
         }
     }
 
@@ -806,8 +776,13 @@ public class NanoleafControllerHandler extends BaseBridgeHandler implements Nano
     private ControllerInfo receiveControllerInfo() throws NanoleafException, NanoleafUnauthorizedException {
         ContentResponse controllerlInfoJSON = OpenAPIUtils.sendOpenAPIRequest(OpenAPIUtils.requestBuilder(httpClient,
                 getControllerConfig(), API_GET_CONTROLLER_INFO, HttpMethod.GET));
-        ControllerInfo controllerInfo = gson.fromJson(controllerlInfoJSON.getContentAsString(), ControllerInfo.class);
-        return Objects.requireNonNull(controllerInfo);
+        try {
+            ControllerInfo ci = gson.fromJson(controllerlInfoJSON.getContentAsString(), ControllerInfo.class);
+            return Objects.requireNonNull(ci);
+        } catch (JsonSyntaxException jse) {
+            throw new NanoleafBadResponseException(
+                    "Not able to parse controller information: " + controllerlInfoJSON.getContentAsString());
+        }
     }
 
     private void sendStateCommand(String channel, Command command) throws NanoleafException {
@@ -1023,7 +998,6 @@ public class NanoleafControllerHandler extends BaseBridgeHandler implements Nano
     }
 
     void parsePanelData(NanoleafControllerConfig config, ContentResponse panelData) {
-        // panelData is in format (numPanels, (PanelId, 1, R, G, B, W, TransitionTime) * numPanel)
         @Nullable
         Write response = null;
 
@@ -1035,35 +1009,20 @@ public class NanoleafControllerHandler extends BaseBridgeHandler implements Nano
             logger.trace("Panel Data which couldn't be parsed: {}", panelDataContent);
         }
 
-        if (response != null) {
-            String[] tokenizedData = response.getAnimData().split(" ");
-            if (config.deviceType.equals(CONFIG_DEVICE_TYPE_LIGHTPANELS)
-                    || config.deviceType.equals(CONFIG_DEVICE_TYPE_CANVAS)) {
-                // panelData is in format (numPanels (PanelId 1 R G B W TransitionTime) * numPanel)
-                String[] panelDataPoints = Arrays.copyOfRange(tokenizedData, 1, tokenizedData.length);
-                for (int i = 0; i < panelDataPoints.length; i++) {
-                    if (i % 7 == 0) {
-                        // found panel data - store it
-                        panelColors.setPanelColor(Integer.valueOf(panelDataPoints[i]),
-                                HSBType.fromRGB(Integer.parseInt(panelDataPoints[i + 2]),
-                                        Integer.parseInt(panelDataPoints[i + 3]),
-                                        Integer.parseInt(panelDataPoints[i + 4])));
-                    }
-                }
-            } else {
-                // panelData is in format (0 numPanels (quotient(panelID) remainder(panelID) R G B W 0
-                // quotient(TransitionTime) remainder(TransitionTime)) * numPanel)
-                String[] panelDataPoints = Arrays.copyOfRange(tokenizedData, 2, tokenizedData.length);
-                for (int i = 0; i < panelDataPoints.length; i++) {
-                    if (i % 8 == 0) {
-                        Integer idQuotient = Integer.valueOf(panelDataPoints[i]);
-                        Integer idRemainder = Integer.valueOf(panelDataPoints[i + 1]);
-                        Integer idNum = idQuotient * 256 + idRemainder;
-                        // found panel data - store it
-                        panelColors.setPanelColor(idNum, HSBType.fromRGB(Integer.parseInt(panelDataPoints[i + 3]),
-                                Integer.parseInt(panelDataPoints[i + 4]), Integer.parseInt(panelDataPoints[i + 5])));
-                    }
-                }
+        if (response == null) {
+            logger.error("Unable to parse panel data information from Nanoleaf - no response");
+            return;
+        }
+
+        String[] tokenizedData = response.getAnimData().split(" ");
+        // panelData is in format (numPanels (PanelId 1 R G B W TransitionTime) * numPanel)
+        String[] panelDataPoints = Arrays.copyOfRange(tokenizedData, 1, tokenizedData.length);
+        for (int i = 0; i < panelDataPoints.length; i++) {
+            if (i % 7 == 0) {
+                // found panel data - store it
+                panelColors.setPanelColor(Integer.valueOf(panelDataPoints[i]),
+                        HSBType.fromRGB(Integer.parseInt(panelDataPoints[i + 2]),
+                                Integer.parseInt(panelDataPoints[i + 3]), Integer.parseInt(panelDataPoints[i + 4])));
             }
         }
     }
@@ -1099,15 +1058,6 @@ public class NanoleafControllerHandler extends BaseBridgeHandler implements Nano
 
     private void setAuthToken(@Nullable String authToken) {
         this.authToken = authToken;
-    }
-
-    @Nullable
-    private String getDeviceType() {
-        return deviceType;
-    }
-
-    private void setDeviceType(String deviceType) {
-        this.deviceType = deviceType;
     }
 
     private void stopAllJobs() {

@@ -13,10 +13,6 @@ The binding uses the [Nanoleaf OpenAPI](https://forum.nanoleaf.me/docs/openapi),
 
 Nanoleaf provides a bunch of devices of which some are connected to Wifi whereas other use the new Thread Technology. This binding only supports devices that are connected through Wifi.
 
-Currently Nanoleaf's "Light Panels" and "Canvas/Shapes" devices are supported.
-
-The binding supports two thing types: controller and lightpanel.
-
 The controller thing is the bridge for the individually attached panels/canvas and can be perceived as the Nanoleaf device at the wall as a whole (either called "light panels", "canvas" or "shapes" by Nanoleaf).
 With the controller thing you can control channels which affect all panels, e.g. selecting effects or setting the brightness.
 
@@ -125,7 +121,6 @@ The controller thing has the following parameters:
 | port            | Port number of the light panels contoller. Default is 16021                           |
 | authToken       | The authentication token received from the controller after successful pairing.       |
 | refreshInterval | Interval in seconds to refresh the state of the light panels settings. Default is 60. |
-| deviceType      | Defines the type `lightpanels` (triangle) or `canvas` (square or hexagon)             |
 
 The lightpanel thing has the following parameters:
 

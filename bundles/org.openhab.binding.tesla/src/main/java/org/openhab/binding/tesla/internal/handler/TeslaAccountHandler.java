@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2010-2023 Contributors to the openHAB project
+ * Copyright (c) 2010-2024 Contributors to the openHAB project
  *
  * See the NOTICE file(s) distributed with this work for additional
  * information.
@@ -18,7 +18,6 @@ import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -36,6 +35,7 @@ import org.openhab.binding.tesla.internal.TeslaBindingConstants;
 import org.openhab.binding.tesla.internal.discovery.TeslaVehicleDiscoveryService;
 import org.openhab.binding.tesla.internal.protocol.Vehicle;
 import org.openhab.binding.tesla.internal.protocol.VehicleConfig;
+import org.openhab.binding.tesla.internal.protocol.VehicleData;
 import org.openhab.binding.tesla.internal.protocol.sso.TokenResponse;
 import org.openhab.core.io.net.http.HttpClientFactory;
 import org.openhab.core.thing.Bridge;
@@ -108,7 +108,8 @@ public class TeslaAccountHandler extends BaseBridgeHandler {
 
         this.vehiclesTarget = teslaTarget.path(API_VERSION).path(VEHICLES);
         this.vehicleTarget = vehiclesTarget.path(PATH_VEHICLE_ID);
-        this.dataRequestTarget = vehicleTarget.path(PATH_DATA_REQUEST);
+        this.dataRequestTarget = vehicleTarget.path(PATH_DATA_REQUEST).queryParam("endpoints",
+                "location_data;charge_state;climate_state;vehicle_state;gui_settings;vehicle_config");
         this.commandTarget = vehicleTarget.path(PATH_COMMAND);
         this.wakeUpTarget = vehicleTarget.path(PATH_WAKE_UP);
     }
@@ -225,10 +226,10 @@ public class TeslaAccountHandler extends BaseBridgeHandler {
             Vehicle[] vehicleArray = gson.fromJson(jsonObject.getAsJsonArray("response"), Vehicle[].class);
 
             for (Vehicle vehicle : vehicleArray) {
-                String responseString = invokeAndParse(vehicle.id, VEHICLE_CONFIG, null, dataRequestTarget, 0);
+                String responseString = invokeAndParse(vehicle.id, null, null, dataRequestTarget, 0);
                 VehicleConfig vehicleConfig = null;
                 if (responseString != null && !responseString.isBlank()) {
-                    vehicleConfig = gson.fromJson(responseString, VehicleConfig.class);
+                    vehicleConfig = gson.fromJson(responseString, VehicleData.class).vehicle_config;
                 }
                 for (VehicleListener listener : vehicleListeners) {
                     listener.vehicleFound(vehicle, vehicleConfig);
@@ -471,6 +472,6 @@ public class TeslaAccountHandler extends BaseBridgeHandler {
 
     @Override
     public Collection<Class<? extends ThingHandlerService>> getServices() {
-        return Collections.singletonList(TeslaVehicleDiscoveryService.class);
+        return List.of(TeslaVehicleDiscoveryService.class);
     }
 }

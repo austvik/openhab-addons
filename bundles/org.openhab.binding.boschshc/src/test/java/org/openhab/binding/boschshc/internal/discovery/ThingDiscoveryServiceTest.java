@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2010-2023 Contributors to the openHAB project
+ * Copyright (c) 2010-2024 Contributors to the openHAB project
  *
  * See the NOTICE file(s) distributed with this work for additional
  * information.
@@ -12,12 +12,14 @@
  */
 package org.openhab.binding.boschshc.internal.discovery;
 
-import static org.hamcrest.CoreMatchers.*;
+import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 import java.util.ArrayList;
+import java.util.UUID;
 
 import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.junit.jupiter.api.BeforeEach;
@@ -31,6 +33,7 @@ import org.openhab.binding.boschshc.internal.devices.BoschSHCBindingConstants;
 import org.openhab.binding.boschshc.internal.devices.bridge.BridgeHandler;
 import org.openhab.binding.boschshc.internal.devices.bridge.dto.Device;
 import org.openhab.binding.boschshc.internal.devices.bridge.dto.Room;
+import org.openhab.binding.boschshc.internal.devices.bridge.dto.UserDefinedState;
 import org.openhab.core.config.discovery.DiscoveryListener;
 import org.openhab.core.config.discovery.DiscoveryResult;
 import org.openhab.core.config.discovery.DiscoveryService;
@@ -44,7 +47,7 @@ import org.openhab.core.thing.ThingUID;
  */
 @ExtendWith(MockitoExtension.class)
 @NonNullByDefault
-public class ThingDiscoveryServiceTest {
+class ThingDiscoveryServiceTest {
 
     private @NonNullByDefault({}) ThingDiscoveryService fixture;
 
@@ -69,7 +72,7 @@ public class ThingDiscoveryServiceTest {
     }
 
     @Test
-    public void testStartScan() throws InterruptedException {
+    void testStartScan() throws InterruptedException {
         mockBridgeCalls();
 
         fixture.activate();
@@ -83,7 +86,7 @@ public class ThingDiscoveryServiceTest {
     }
 
     @Test
-    public void testStartScanWithoutBridgeHandler() {
+    void testStartScanWithoutBridgeHandler() {
         mockBridgeCalls();
 
         // No fixture.setThingHandler(bridgeHandler);
@@ -96,13 +99,13 @@ public class ThingDiscoveryServiceTest {
     }
 
     @Test
-    public void testSetGetThingHandler() {
+    void testSetGetThingHandler() {
         fixture.setThingHandler(bridgeHandler);
         assertThat(fixture.getThingHandler(), is(bridgeHandler));
     }
 
     @Test
-    public void testAddDevices() {
+    void testAddDevices() {
         mockBridgeCalls();
 
         ArrayList<Device> devices = new ArrayList<>();
@@ -128,7 +131,7 @@ public class ThingDiscoveryServiceTest {
     }
 
     @Test
-    public void testAddDevicesWithNoDevices() {
+    void testAddDevicesWithNoDevices() {
         ArrayList<Device> emptyDevices = new ArrayList<>();
         ArrayList<Room> emptyRooms = new ArrayList<>();
 
@@ -141,7 +144,7 @@ public class ThingDiscoveryServiceTest {
     }
 
     @Test
-    public void testAddDevice() {
+    void testAddDevice() {
         mockBridgeCalls();
 
         Device device = new Device();
@@ -159,26 +162,26 @@ public class ThingDiscoveryServiceTest {
         assertThat(result.getThingUID().getId(), is("testDevice_ID"));
         assertThat(result.getBridgeUID().getId(), is("testSHC"));
         assertThat(result.getLabel(), is("Test Name"));
-        assertThat(result.getProperties().get("Location").toString(), is("TestRoom"));
+        assertThat(String.valueOf(result.getProperties().get("Location")), is("TestRoom"));
     }
 
     @Test
-    public void testAddDeviceWithNiceNameAndAppendedRoomName() {
+    void testAddDeviceWithNiceNameAndAppendedRoomName() {
         assertDeviceNiceName("-RoomClimateControl-", "TestRoom", "Room Climate Control TestRoom");
     }
 
     @Test
-    public void testAddDeviceWithNiceNameWithEmtpyRoomName() {
+    void testAddDeviceWithNiceNameWithEmtpyRoomName() {
         assertDeviceNiceName("-RoomClimateControl-", "", "Room Climate Control");
     }
 
     @Test
-    public void testAddDeviceWithNiceNameWithoutAppendingRoomName() {
+    void testAddDeviceWithNiceNameWithoutAppendingRoomName() {
         assertDeviceNiceName("-SmokeDetectionSystem-", "TestRoom", "Smoke Detection System");
     }
 
     @Test
-    public void testAddDeviceWithNiceNameWithoutUsualName() {
+    void testAddDeviceWithNiceNameWithoutUsualName() {
         assertDeviceNiceName("My other device", "TestRoom", "My other device");
     }
 
@@ -197,7 +200,7 @@ public class ThingDiscoveryServiceTest {
     }
 
     @Test
-    public void testGetRoomForDevice() {
+    void testGetRoomForDevice() {
         Device device = new Device();
 
         ArrayList<Room> rooms = new ArrayList<>();
@@ -221,7 +224,7 @@ public class ThingDiscoveryServiceTest {
     }
 
     @Test
-    public void testGetThingTypeUID() {
+    void testGetThingTypeUID() {
         Device device = new Device();
 
         device.deviceModel = "invalid";
@@ -232,5 +235,30 @@ public class ThingDiscoveryServiceTest {
         assertThat(fixture.getThingTypeUID(device), is(BoschSHCBindingConstants.THING_TYPE_SHUTTER_CONTROL));
         device.deviceModel = "TWINGUARD";
         assertThat(fixture.getThingTypeUID(device), is(BoschSHCBindingConstants.THING_TYPE_TWINGUARD));
+    }
+
+    @Test
+    void testAddUserDefinedStates() {
+        mockBridgeCalls();
+
+        ArrayList<UserDefinedState> userStates = new ArrayList<>();
+
+        UserDefinedState userState1 = new UserDefinedState();
+        userState1.setId(UUID.randomUUID().toString());
+        userState1.setName("first defined state");
+        userState1.setState(true);
+        UserDefinedState userState2 = new UserDefinedState();
+        userState2.setId(UUID.randomUUID().toString());
+        userState2.setName("another defined state");
+        userState2.setState(false);
+        userStates.add(userState1);
+        userStates.add(userState2);
+
+        verify(discoveryListener, never()).thingDiscovered(any(), any());
+
+        fixture.addUserStates(userStates);
+
+        // two calls for the two devices expected
+        verify(discoveryListener, times(2)).thingDiscovered(any(), any());
     }
 }

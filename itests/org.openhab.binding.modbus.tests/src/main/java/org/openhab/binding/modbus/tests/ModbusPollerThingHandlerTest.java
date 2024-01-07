@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2010-2023 Contributors to the openHAB project
+ * Copyright (c) 2010-2024 Contributors to the openHAB project
  *
  * See the NOTICE file(s) distributed with this work for additional
  * information.
@@ -789,7 +789,6 @@ public class ModbusPollerThingHandlerTest extends AbstractModbusOSGiTest {
     @Test
     public void testRefreshWithOldPreviousData() throws IllegalArgumentException, IllegalAccessException,
             NoSuchFieldException, SecurityException, InterruptedException {
-
         Configuration pollerConfig = new Configuration();
         pollerConfig.put("refresh", 0L);
         pollerConfig.put("start", 5);

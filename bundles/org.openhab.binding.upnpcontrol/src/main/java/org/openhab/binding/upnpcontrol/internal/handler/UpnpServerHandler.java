@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2010-2023 Contributors to the openHAB project
+ * Copyright (c) 2010-2024 Contributors to the openHAB project
  *
  * See the NOTICE file(s) distributed with this work for additional
  * information.
@@ -321,8 +321,8 @@ public class UpnpServerHandler extends UpnpHandler {
     private void handleCommandUpnpRenderer(ChannelUID channelUID, Command command) {
         UpnpRendererHandler renderer = null;
         UpnpRendererHandler previousRenderer = currentRendererHandler;
-        if (command instanceof StringType) {
-            renderer = (upnpRenderers.get(((StringType) command).toString()));
+        if (command instanceof StringType stringCommand) {
+            renderer = (upnpRenderers.get(stringCommand.toString()));
             currentRendererHandler = renderer;
             if (config.filter) {
                 // only refresh title list if filtering by renderer capabilities

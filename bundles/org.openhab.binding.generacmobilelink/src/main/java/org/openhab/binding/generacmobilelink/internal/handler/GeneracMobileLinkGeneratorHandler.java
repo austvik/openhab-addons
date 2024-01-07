@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2010-2023 Contributors to the openHAB project
+ * Copyright (c) 2010-2024 Contributors to the openHAB project
  *
  * See the NOTICE file(s) distributed with this work for additional
  * information.
@@ -122,7 +122,7 @@ public class GeneracMobileLinkGeneratorHandler extends BaseThingHandler {
             try {
                 if (p.value.signalStrength != null) {
                     updateState(CHANNEL_SIGNAL_STRENGH, new QuantityType<Dimensionless>(
-                            Integer.parseInt(p.value.signalStrength.replaceAll("%", "")), Units.PERCENT));
+                            Integer.parseInt(p.value.signalStrength.replace("%", "")), Units.PERCENT));
                 }
             } catch (NumberFormatException e) {
                 logger.debug("Could not parse signalStrength {}", p.value.signalStrength);

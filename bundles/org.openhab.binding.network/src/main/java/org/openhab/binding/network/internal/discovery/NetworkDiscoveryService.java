@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2010-2023 Contributors to the openHAB project
+ * Copyright (c) 2010-2024 Contributors to the openHAB project
  *
  * See the NOTICE file(s) distributed with this work for additional
  * information.
@@ -181,11 +181,11 @@ public class NetworkDiscoveryService extends AbstractDiscoveryService implements
 
     public static ThingUID createServiceUID(String ip, int tcpPort) {
         // uid must not contains dots
-        return new ThingUID(SERVICE_DEVICE, ip.replace('.', '_') + "_" + String.valueOf(tcpPort));
+        return new ThingUID(SERVICE_DEVICE, ip.replace('.', '_') + "_" + tcpPort);
     }
 
     /**
-     * Submit newly discovered devices. This method is called by the spawned threads in {@link startScan}.
+     * Submit newly discovered devices. This method is called by the spawned threads in {@link #startScan()}.
      *
      * @param ip The device IP
      * @param tcpPort The TCP port
@@ -228,7 +228,7 @@ public class NetworkDiscoveryService extends AbstractDiscoveryService implements
     }
 
     /**
-     * Submit newly discovered devices. This method is called by the spawned threads in {@link startScan}.
+     * Submit newly discovered devices. This method is called by the spawned threads in {@link #startScan()}.
      *
      * @param ip The device IP
      */

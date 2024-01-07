@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2010-2023 Contributors to the openHAB project
+ * Copyright (c) 2010-2024 Contributors to the openHAB project
  *
  * See the NOTICE file(s) distributed with this work for additional
  * information.
@@ -38,7 +38,7 @@ import com.google.gson.JsonParser;
  *
  */
 @NonNullByDefault
-public class TwinguardHandlerTest extends AbstractSmokeDetectorHandlerTest<TwinguardHandler> {
+class TwinguardHandlerTest extends AbstractSmokeDetectorHandlerTest<TwinguardHandler> {
 
     @Override
     protected TwinguardHandler createFixture() {
@@ -56,10 +56,12 @@ public class TwinguardHandlerTest extends AbstractSmokeDetectorHandlerTest<Twing
     }
 
     @Test
-    public void testUpdateChannelsAirQualityLevelService() {
+    void testUpdateChannelsAirQualityLevelService() {
         JsonElement jsonObject = JsonParser.parseString(
-                "{\"temperatureRating\":\"GOOD\",\"humidityRating\":\"MEDIUM\",\"purity\":620,\"@type\":\"airQualityLevelState\",\n"
-                        + "     \"purityRating\":\"GOOD\",\"temperature\":23.77,\"description\":\"LITTLE_DRY\",\"humidity\":32.69,\"combinedRating\":\"MEDIUM\"}");
+                """
+                        {"temperatureRating":"GOOD","humidityRating":"MEDIUM","purity":620,"@type":"airQualityLevelState",
+                             "purityRating":"GOOD","temperature":23.77,"description":"LITTLE_DRY","humidity":32.69,"combinedRating":"MEDIUM"}\
+                        """);
         getFixture().processUpdate("AirQualityLevel", jsonObject);
 
         verify(getCallback()).stateUpdated(

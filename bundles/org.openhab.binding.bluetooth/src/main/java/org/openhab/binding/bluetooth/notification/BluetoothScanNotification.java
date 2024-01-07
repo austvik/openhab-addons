@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2010-2023 Contributors to the openHAB project
+ * Copyright (c) 2010-2024 Contributors to the openHAB project
  *
  * See the NOTICE file(s) distributed with this work for additional
  * information.
@@ -131,7 +131,7 @@ public class BluetoothScanNotification extends BluetoothNotification {
     /**
      * Sets the beacon type for this packet
      *
-     * @beaconType the {@link BluetoothBeaconType} for this packet
+     * @param beaconType the {@link BluetoothBeaconType} for this packet
      */
     public void setBeaconType(BluetoothBeaconType beaconType) {
         this.beaconType = beaconType;

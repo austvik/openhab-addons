@@ -18,12 +18,18 @@ import java.util.Set;
 
 import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.eclipse.jdt.annotation.Nullable;
+import org.openhab.binding.midi.internal.handlers.MIDIChannelHandler;
+import org.openhab.binding.midi.internal.handlers.MIDIDeviceHandler;
+import org.openhab.core.thing.Bridge;
 import org.openhab.core.thing.Thing;
 import org.openhab.core.thing.ThingTypeUID;
 import org.openhab.core.thing.binding.BaseThingHandlerFactory;
 import org.openhab.core.thing.binding.ThingHandler;
 import org.openhab.core.thing.binding.ThingHandlerFactory;
+import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * The {@link MIDIHandlerFactory} is responsible for creating things and thing
@@ -35,7 +41,15 @@ import org.osgi.service.component.annotations.Component;
 @Component(configurationPid = "binding.midi", service = ThingHandlerFactory.class)
 public class MIDIHandlerFactory extends BaseThingHandlerFactory {
 
-    private static final Set<ThingTypeUID> SUPPORTED_THING_TYPES_UIDS = Set.of(THING_TYPE_MIDI_DEVICE);
+    private final Logger logger = LoggerFactory.getLogger(MIDIHandlerFactory.class);
+
+    private static final Set<ThingTypeUID> SUPPORTED_THING_TYPES_UIDS = Set.of(THING_TYPE_MIDI_DEVICE,
+            THING_TYPE_MIDI_CHANNEL);
+
+    @Activate
+    public MIDIHandlerFactory() {
+        logger.debug("Activating factory for: {}", SUPPORTED_THING_TYPES_UIDS);
+    }
 
     @Override
     public boolean supportsThingType(ThingTypeUID thingTypeUID) {
@@ -47,7 +61,11 @@ public class MIDIHandlerFactory extends BaseThingHandlerFactory {
         ThingTypeUID thingTypeUID = thing.getThingTypeUID();
 
         if (THING_TYPE_MIDI_DEVICE.equals(thingTypeUID)) {
-            return new MIDIDeviceHandler(thing);
+            return new MIDIDeviceHandler((Bridge) thing);
+        }
+
+        if (THING_TYPE_MIDI_CHANNEL.equals(thingTypeUID)) {
+            return new MIDIChannelHandler(thing);
         }
 
         return null;

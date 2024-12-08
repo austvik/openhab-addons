@@ -19,7 +19,7 @@ import javax.sound.midi.SysexMessage;
 
 import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.eclipse.jdt.annotation.Nullable;
-import org.openhab.binding.midi.internal.MIDIDeviceHandler;
+import org.openhab.binding.midi.internal.handlers.MIDIDeviceHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -48,8 +48,8 @@ public class MIDIInputReceiver implements Receiver {
             if (messageContent != null) {
                 String formattedMessage = MIDIHelper.formatMIDIString(messageContent);
                 logger.debug("{} received: {}", deviceName, formattedMessage);
-                if (msg instanceof ShortMessage) {
-                    handler.receivedShortMessage((ShortMessage) msg, formattedMessage);
+                if (msg instanceof ShortMessage shortMessage) {
+                    handler.receivedShortMessage(shortMessage, formattedMessage);
                 } else if (msg instanceof SysexMessage) {
                     handler.receivedSysexMessage(formattedMessage);
                 } else {

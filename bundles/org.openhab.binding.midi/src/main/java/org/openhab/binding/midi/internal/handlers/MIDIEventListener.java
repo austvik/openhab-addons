@@ -10,20 +10,24 @@
  *
  * SPDX-License-Identifier: EPL-2.0
  */
-package org.openhab.binding.midi.internal;
+package org.openhab.binding.midi.internal.handlers;
+
+import javax.sound.midi.MidiMessage;
 
 import org.eclipse.jdt.annotation.NonNullByDefault;
 
 /**
- * The {@link MIDIConfiguration} class contains fields mapping thing configuration parameters.
+ * Listen to midi events.
  *
  * @author Jørgen Austvik - Initial contribution
  */
 @NonNullByDefault
-public class MIDIConfiguration {
-
+public interface MIDIEventListener {
     /**
-     * Sample configuration parameters. Replace with your own.
+     * Called when you receive a MIDI message.
+     *
+     * @param message The message object
+     * @param messageString The parsed message string
      */
-    public String deviceId = "";
+    public void receivedMessage(MidiMessage message, String messageString);
 }

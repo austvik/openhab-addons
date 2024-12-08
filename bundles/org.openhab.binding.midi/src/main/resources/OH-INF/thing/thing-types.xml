@@ -5,7 +5,7 @@
 	xsi:schemaLocation="https://openhab.org/schemas/thing-description/v1.0.0 https://openhab.org/schemas/thing-description-1.0.0.xsd">
 
 	<!-- Sample Thing Type -->
-	<thing-type id="device">
+	<bridge-type id="device">
 		<label>MIDI Device</label>
 		<description>MIDI Device</description>
 
@@ -17,14 +17,36 @@
 		</channels>
 
 		<representation-property>deviceid</representation-property>
-
 		<config-description>
 			<parameter name="deviceId" type="text" required="true">
 				<label>Device ID</label>
 				<description>ID of the MIDI device. Use "amidi -l" on Linux to show names of devices</description>
 			</parameter>
 		</config-description>
+	</bridge-type>
 
+	<thing-type id="channel">
+		<supported-bridge-type-refs>
+			<bridge-type-ref id="device"/>
+		</supported-bridge-type-refs>
+
+		<label>MIDI Channel</label>
+		<description>MIDI Channel</description>
+
+		<channels>
+			<channel id="noteOn" typeId="note-on"/>
+			<channel id="noteOff" typeId="note-off"/>
+			<channel id="controlChange" typeId="control-change"/>
+			<channel id="programChange" typeId="program-change"/>
+		</channels>
+
+		<representation-property>channel</representation-property>
+		<config-description>
+			<parameter name="channel" type="integer" min="1" max="16" required="true">
+				<label>Channel ID</label>
+				<description>ID of the MIDI channel.</description>
+			</parameter>
+		</config-description>
 	</thing-type>
 
 	<channel-type id="send-message">
@@ -38,6 +60,34 @@
 		<label>Receive Message</label>
 		<description>Receive a message from a MIDI device</description>
 		<event/>
+	</channel-type>
+
+	<channel-type id="note-on">
+		<item-type>Number</item-type>
+		<label>Note On</label>
+		<description>Note started playing</description>
+		<state min="1" max="16" step="1"/>
+	</channel-type>
+
+	<channel-type id="note-off">
+		<item-type>Number</item-type>
+		<label>Note Off</label>
+		<description>Note stopped playing</description>
+		<state min="1" max="16" step="1"/>
+	</channel-type>
+
+	<channel-type id="control-change">
+		<item-type>Number</item-type>
+		<label>Control Change</label>
+		<description>MIDI Control Change message</description>
+		<state min="0" max="127" step="1"/>
+	</channel-type>
+
+	<channel-type id="program-change">
+		<item-type>Number</item-type>
+		<label>Program Change</label>
+		<description>MIDI Program Change message</description>
+		<state min="0" max="127" step="1"/>
 	</channel-type>
 
 </thing:thing-descriptions>

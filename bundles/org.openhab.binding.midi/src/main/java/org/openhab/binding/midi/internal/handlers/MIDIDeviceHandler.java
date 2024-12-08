@@ -10,21 +10,31 @@
  *
  * SPDX-License-Identifier: EPL-2.0
  */
-package org.openhab.binding.midi.internal;
+package org.openhab.binding.midi.internal.handlers;
 
 import static org.openhab.binding.midi.internal.MIDIBindingConstants.*;
 
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+
+import javax.sound.midi.MidiMessage;
 import javax.sound.midi.ShortMessage;
 
 import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.eclipse.jdt.annotation.Nullable;
+import org.openhab.binding.midi.internal.MIDIDeviceConfiguration;
+import org.openhab.binding.midi.internal.discovery.MIDIChannelDiscoveryService;
 import org.openhab.binding.midi.internal.midi.MidiDeviceException;
 import org.openhab.binding.midi.internal.midi.TwoWayMIDIDevice;
 import org.openhab.core.library.types.StringType;
+import org.openhab.core.thing.Bridge;
 import org.openhab.core.thing.ChannelUID;
 import org.openhab.core.thing.Thing;
 import org.openhab.core.thing.ThingStatus;
-import org.openhab.core.thing.binding.BaseThingHandler;
+import org.openhab.core.thing.binding.BaseBridgeHandler;
+import org.openhab.core.thing.binding.ThingHandlerService;
 import org.openhab.core.types.Command;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -36,14 +46,15 @@ import org.slf4j.LoggerFactory;
  * @author Jørgen Austvik - Initial contribution
  */
 @NonNullByDefault
-public class MIDIDeviceHandler extends BaseThingHandler {
+public class MIDIDeviceHandler extends BaseBridgeHandler {
 
     private final Logger logger = LoggerFactory.getLogger(MIDIDeviceHandler.class);
+    private final Set<MIDIEventListener> eventListeners = new HashSet<>(1);
 
     private @Nullable TwoWayMIDIDevice device;
 
-    public MIDIDeviceHandler(Thing thing) {
-        super(thing);
+    public MIDIDeviceHandler(Bridge bridge) {
+        super(bridge);
     }
 
     @Override
@@ -64,7 +75,7 @@ public class MIDIDeviceHandler extends BaseThingHandler {
     @Override
     public void initialize() {
         updateStatus(ThingStatus.UNKNOWN);
-        MIDIConfiguration config = getConfigAs(MIDIConfiguration.class);
+        MIDIDeviceConfiguration config = getConfigAs(MIDIDeviceConfiguration.class);
         scheduler.execute(() -> {
             logger.debug("Connecting to MIDI device '{}'", config.deviceId);
             try {
@@ -83,11 +94,19 @@ public class MIDIDeviceHandler extends BaseThingHandler {
 
     public void receivedShortMessage(ShortMessage midiMessage, String messageString) {
         triggerChannel(CHANNEL_RECEIVE_CHANNEL_MESSAGE, messageString);
-        logger.debug("Channel {}, CC: {}, PC: {}, Note ON: {}, Note Off: {}, Data: {}", midiMessage.getChannel(),
-                midiMessage.getCommand() == ShortMessage.CONTROL_CHANGE,
-                midiMessage.getCommand() == ShortMessage.PROGRAM_CHANGE,
-                midiMessage.getCommand() == ShortMessage.NOTE_ON, midiMessage.getCommand() == ShortMessage.NOTE_OFF,
-                midiMessage.getData1());
+        int messageChannel = midiMessage.getChannel() + 1;
+
+        // Alert (child) channels
+        for (Thing t : getThing().getThings()) {
+            if (t.getHandler() instanceof MIDIChannelHandler handler) {
+                if (handler.getChannel() == messageChannel) {
+                    handler.receivedShortMessage(midiMessage, messageString);
+                }
+            }
+        }
+
+        // Background discovery
+        triggerEventListeners(midiMessage, messageString);
     }
 
     @Override
@@ -96,5 +115,35 @@ public class MIDIDeviceHandler extends BaseThingHandler {
         if (md != null) {
             md.close();
         }
+    }
+
+    public String getDeviceId() {
+        TwoWayMIDIDevice md = device;
+        if (md != null) {
+            return md.getDeviceId();
+        }
+
+        return "";
+    }
+
+    // Event listening
+
+    public void addEventListener(MIDIEventListener listener) {
+        eventListeners.add(listener);
+    }
+
+    public void removeEventListener(MIDIEventListener listener) {
+        eventListeners.remove(listener);
+    }
+
+    public void triggerEventListeners(MidiMessage message, String messageString) {
+        for (MIDIEventListener listener : eventListeners) {
+            listener.receivedMessage(message, messageString);
+        }
+    }
+
+    @Override
+    public Collection<Class<? extends ThingHandlerService>> getServices() {
+        return List.of(MIDIChannelDiscoveryService.class);
     }
 }

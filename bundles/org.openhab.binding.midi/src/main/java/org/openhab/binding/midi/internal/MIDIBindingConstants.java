@@ -12,6 +12,8 @@
  */
 package org.openhab.binding.midi.internal;
 
+import java.time.Duration;
+
 import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.openhab.core.thing.ThingTypeUID;
 
@@ -26,12 +28,25 @@ public class MIDIBindingConstants {
 
     private static final String BINDING_ID = "midi";
 
+    // Discovery
+    public static final Duration SEARCH_TIME = Duration.ofSeconds(15);
+    public static final boolean BACKGROUND_DISCOVERY = true;
+
     // List of all Thing Type UIDs
     public static final ThingTypeUID THING_TYPE_MIDI_DEVICE = new ThingTypeUID(BINDING_ID, "device");
+    public static final ThingTypeUID THING_TYPE_MIDI_CHANNEL = new ThingTypeUID(BINDING_ID, "channel");
 
     // List of all Channel ids
+
+    // Device
     public static final String CHANNEL_SEND_SYSEX_MESSAGE = "sendSysexMessage";
     public static final String CHANNEL_SEND_CHANNEL_MESSAGE = "sendChannelMessage";
     public static final String CHANNEL_RECEIVE_SYSEX_MESSAGE = "receiveSysexMessage";
     public static final String CHANNEL_RECEIVE_CHANNEL_MESSAGE = "receiveChannelMessage";
+
+    // Channel
+    public static final String CHANNEL_NOTE_ON = "noteOn";
+    public static final String CHANNEL_NOTE_OFF = "noteOff";
+    public static final String CHANNEL_CONTROL_CHANGE = "controlChange";
+    public static final String CHANNEL_PROGRAM_CHANGE = "programChange";
 }

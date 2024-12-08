@@ -1,8 +1,10 @@
 # MIDI Binding
 
-MIDI (https://midi.org/) is a protocol for communicating with musical instruments.
+MIDI (Musical Instrument Digital Interface, https://midi.org/) is a protocol for communicating with musical instruments.
 
 This binding lets you react on MIDI events and send MIDI commands to MIDI devices that are on your system.
+
+While this binding can be used to listen messages from instruments and play on them, it is perhaps best suited to enable MIDI controllers to control your home automation system.
 
 ## Supported Things
 

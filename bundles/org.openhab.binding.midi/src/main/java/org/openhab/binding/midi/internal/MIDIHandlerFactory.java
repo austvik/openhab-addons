@@ -19,6 +19,7 @@ import java.util.Set;
 import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.eclipse.jdt.annotation.Nullable;
 import org.openhab.binding.midi.internal.handlers.MIDIChannelHandler;
+import org.openhab.binding.midi.internal.handlers.MIDIControlChangeHandler;
 import org.openhab.binding.midi.internal.handlers.MIDIDeviceHandler;
 import org.openhab.core.thing.Bridge;
 import org.openhab.core.thing.Thing;
@@ -44,7 +45,7 @@ public class MIDIHandlerFactory extends BaseThingHandlerFactory {
     private final Logger logger = LoggerFactory.getLogger(MIDIHandlerFactory.class);
 
     private static final Set<ThingTypeUID> SUPPORTED_THING_TYPES_UIDS = Set.of(THING_TYPE_MIDI_DEVICE,
-            THING_TYPE_MIDI_CHANNEL);
+            THING_TYPE_MIDI_CHANNEL, THING_TYPE_MIDI_CONTROL_CHANGE);
 
     @Activate
     public MIDIHandlerFactory() {
@@ -65,7 +66,11 @@ public class MIDIHandlerFactory extends BaseThingHandlerFactory {
         }
 
         if (THING_TYPE_MIDI_CHANNEL.equals(thingTypeUID)) {
-            return new MIDIChannelHandler(thing);
+            return new MIDIChannelHandler((Bridge) thing);
+        }
+
+        if (THING_TYPE_MIDI_CONTROL_CHANGE.equals(thingTypeUID)) {
+            return new MIDIControlChangeHandler(thing);
         }
 
         return null;

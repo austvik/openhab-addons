@@ -12,16 +12,23 @@
  */
 package org.openhab.binding.midi.internal.handlers;
 
+import java.util.Collection;
+import java.util.List;
+
 import javax.sound.midi.ShortMessage;
 
+import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.openhab.binding.midi.internal.MIDIBindingConstants;
 import org.openhab.binding.midi.internal.MIDIChannelConfiguration;
+import org.openhab.binding.midi.internal.discovery.MIDIControlChangeDiscoveryService;
 import org.openhab.core.library.types.DecimalType;
+import org.openhab.core.thing.Bridge;
 import org.openhab.core.thing.ChannelUID;
 import org.openhab.core.thing.Thing;
 import org.openhab.core.thing.ThingStatus;
-import org.openhab.core.thing.binding.BaseThingHandler;
+import org.openhab.core.thing.binding.BaseBridgeHandler;
+import org.openhab.core.thing.binding.ThingHandlerService;
 import org.openhab.core.types.Command;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -32,14 +39,14 @@ import org.slf4j.LoggerFactory;
  * @author Jørgen Austvik - Initial contribution
  */
 @NonNullByDefault
-public class MIDIChannelHandler extends BaseThingHandler {
+public class MIDIChannelHandler extends BaseBridgeHandler {
 
     private final Logger logger = LoggerFactory.getLogger(MIDIChannelHandler.class);
 
     private @NonNullByDefault({}) MIDIChannelConfiguration config = null;
 
-    public MIDIChannelHandler(Thing thing) {
-        super(thing);
+    public MIDIChannelHandler(Bridge bridge) {
+        super(bridge);
     }
 
     @Override
@@ -63,8 +70,18 @@ public class MIDIChannelHandler extends BaseThingHandler {
                 updateState(MIDIBindingConstants.CHANNEL_NOTE_ON, new DecimalType(midiMessage.getData1()));
             case ShortMessage.NOTE_OFF ->
                 updateState(MIDIBindingConstants.CHANNEL_NOTE_OFF, new DecimalType(midiMessage.getData1()));
-            case ShortMessage.CONTROL_CHANGE ->
+            case ShortMessage.CONTROL_CHANGE -> {
                 updateState(MIDIBindingConstants.CHANNEL_CONTROL_CHANGE, new DecimalType(midiMessage.getData1()));
+
+                // Alert (child) channels
+                for (Thing t : getThing().getThings()) {
+                    if (t.getHandler() instanceof MIDIControlChangeHandler handler) {
+                        if (handler.getCCNumber() == midiMessage.getData1()) {
+                            handler.receivedShortMessage(midiMessage, messageString);
+                        }
+                    }
+                }
+            }
             case ShortMessage.PROGRAM_CHANGE ->
                 updateState(MIDIBindingConstants.CHANNEL_PROGRAM_CHANGE, new DecimalType(midiMessage.getData1()));
             default ->
@@ -74,5 +91,14 @@ public class MIDIChannelHandler extends BaseThingHandler {
 
     public int getChannel() {
         return config.channel;
+    }
+
+    public MIDIDeviceHandler getDeviceHandler() {
+        return (@NonNull MIDIDeviceHandler) getBridge().getHandler();
+    }
+
+    @Override
+    public Collection<Class<? extends ThingHandlerService>> getServices() {
+        return List.of(MIDIControlChangeDiscoveryService.class);
     }
 }

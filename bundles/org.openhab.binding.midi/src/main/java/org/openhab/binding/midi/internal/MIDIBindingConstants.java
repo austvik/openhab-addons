@@ -35,6 +35,7 @@ public class MIDIBindingConstants {
     // List of all Thing Type UIDs
     public static final ThingTypeUID THING_TYPE_MIDI_DEVICE = new ThingTypeUID(BINDING_ID, "device");
     public static final ThingTypeUID THING_TYPE_MIDI_CHANNEL = new ThingTypeUID(BINDING_ID, "channel");
+    public static final ThingTypeUID THING_TYPE_MIDI_CONTROL_CHANGE = new ThingTypeUID(BINDING_ID, "control-change");
 
     // List of all Channel ids
 
@@ -49,4 +50,7 @@ public class MIDIBindingConstants {
     public static final String CHANNEL_NOTE_OFF = "noteOff";
     public static final String CHANNEL_CONTROL_CHANGE = "controlChange";
     public static final String CHANNEL_PROGRAM_CHANGE = "programChange";
+
+    // Control Change
+    public static final String CHANNEL_CC_VALUE = "value";
 }

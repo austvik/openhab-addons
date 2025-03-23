@@ -25,7 +25,7 @@
 		</config-description>
 	</bridge-type>
 
-	<thing-type id="channel">
+	<bridge-type id="channel">
 		<supported-bridge-type-refs>
 			<bridge-type-ref id="device"/>
 		</supported-bridge-type-refs>
@@ -44,6 +44,27 @@
 		<config-description>
 			<parameter name="channel" type="integer" min="1" max="16" required="true">
 				<label>Channel ID</label>
+				<description>ID of the MIDI channel.</description>
+			</parameter>
+		</config-description>
+	</bridge-type>
+
+	<thing-type id="control-change">
+		<supported-bridge-type-refs>
+			<bridge-type-ref id="channel"/>
+		</supported-bridge-type-refs>
+
+		<label>MIDI Control Change Message</label>
+		<description>MIDI Control Change Message</description>
+
+		<channels>
+			<channel id="value" typeId="control-change-value"/>
+		</channels>
+
+		<representation-property>ccNumber</representation-property>
+		<config-description>
+			<parameter name="ccNumber" type="integer" min="0" max="127" required="true">
+				<label>Config Change Number</label>
 				<description>ID of the MIDI channel.</description>
 			</parameter>
 		</config-description>
@@ -79,7 +100,7 @@
 	<channel-type id="control-change">
 		<item-type>Number</item-type>
 		<label>Control Change</label>
-		<description>MIDI Control Change message</description>
+		<description>MIDI Control Change message number</description>
 		<state min="0" max="127" step="1"/>
 	</channel-type>
 
@@ -87,6 +108,13 @@
 		<item-type>Number</item-type>
 		<label>Program Change</label>
 		<description>MIDI Program Change message</description>
+		<state min="0" max="127" step="1"/>
+	</channel-type>
+
+	<channel-type id="control-change-value">
+		<item-type>Number</item-type>
+		<label>Control Change Value</label>
+		<description>MIDI Control Change value</description>
 		<state min="0" max="127" step="1"/>
 	</channel-type>
 
